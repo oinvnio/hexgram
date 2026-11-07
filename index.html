@@ -20,64 +20,88 @@
     :root { --bg: #141414; --panel: #1e1e1e; --ink: #ecebe8; --sub: #9a968f; --line: #2e2e2e; }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "Noto Sans KR", system-ui, sans-serif; }
-  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
-  header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
-  h1 { font: 22px "DotGothic16", monospace; margin: 0; letter-spacing: .02em; }
-  header span { color: var(--sub); font-size: 13px; }
-  .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
-  @media (min-width: 860px) { .grid { grid-template-columns: 360px 1fr; align-items: start; } }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
-  .card h2 { font-size: 13px; font-weight: 600; color: var(--sub); margin: 0 0 10px; letter-spacing: .04em; }
-  .card + .card { margin-top: 14px; }
-  label { display: block; font-size: 13px; color: var(--sub); margin: 12px 0 6px; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Noto Sans KR", system-ui, sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 10px 10px 40px; }
+  header { display: flex; align-items: baseline; gap: 8px; margin: 2px 4px 8px; }
+  h1 { font: 18px "DotGothic16", monospace; margin: 0; letter-spacing: .02em; }
+  header span { color: var(--sub); font-size: 12px; }
+  @media (max-width: 480px) { header span { display: none; } }
+
+  /* 좁은 화면(커버 화면): 미리보기 위 → 설정 → 캡션 */
+  .grid { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr);
+          grid-template-areas: "preview" "controls" "caption"; }
+  .controls { grid-area: controls; } .preview { grid-area: preview; } .captionArea { grid-area: caption; }
+  @media (min-height: 640px) {
+    .preview { position: sticky; top: 0; z-index: 5; margin: 0 -10px; padding: 0 10px 6px;
+               background: var(--bg); }
+  }
+  /* 넓은 화면(펼친 화면): 왼쪽 설정·캡션, 오른쪽 미리보기 고정 */
+  @media (min-width: 640px) {
+    .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-areas: "controls preview" "caption preview"; align-items: start; }
+    .preview { position: sticky; top: 10px; margin: 0; padding: 0; background: none; }
+    .slides { flex-wrap: wrap; overflow: visible; scroll-snap-type: none; }
+    .slide { width: calc((100% - 16px) / 3) !important; }
+  }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .card h2 { font-size: 12px; font-weight: 600; color: var(--sub); margin: 0 0 8px; letter-spacing: .04em; }
+  .card + .card { margin-top: 10px; }
+  label { display: flex; justify-content: space-between; font-size: 12px; color: var(--sub); margin: 10px 0 4px; }
+  label b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stepper { display: flex; align-items: center; gap: 8px; }
+  .stepper button { width: 34px; height: 34px; padding: 0; flex: none; font-size: 18px; line-height: 1; }
   label:first-of-type { margin-top: 0; }
   input[type=text], input[type=number], textarea {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px;
     background: transparent; color: var(--ink); font: inherit;
   }
-  textarea { min-height: 220px; resize: vertical; font-family: "Gowun Batang", serif; font-size: 16px; line-height: 1.7; }
+  textarea { min-height: 150px; resize: vertical; font-family: "Gowun Batang", serif; font-size: 16px; line-height: 1.7; }
   .hint { font-size: 12px; color: var(--sub); margin-top: 6px; }
   .row { display: flex; gap: 8px; align-items: center; }
   .row > * { flex: 1; }
   button {
     font: inherit; font-weight: 600; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
-    border-radius: 10px; padding: 10px 14px; cursor: pointer;
+    border-radius: 9px; padding: 8px 12px; cursor: pointer;
   }
   button.primary { background: var(--ink); color: var(--panel); border-color: var(--ink); }
   button:disabled { opacity: .45; cursor: default; }
   .hexbox { display: flex; gap: 10px; align-items: center; }
-  .swatch { width: 52px; height: 52px; border-radius: 10px; border: 1px solid var(--line); flex: none; }
-  .hexbox input { font-family: "DotGothic16", monospace; font-size: 20px; text-transform: uppercase; }
-  .ramp { display: flex; height: 14px; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+  .swatch { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); flex: none; }
+  .hexbox input { font-family: "DotGothic16", monospace; font-size: 18px; text-transform: uppercase; }
+  .ramp { display: flex; height: 10px; border-radius: 4px; overflow: hidden; margin-top: 8px; }
   .ramp div { flex: 1; }
   .drop {
-    border: 1.5px dashed var(--line); border-radius: 12px; padding: 14px; text-align: center; color: var(--sub);
+    border: 1.5px dashed var(--line); border-radius: 10px; padding: 10px; text-align: center; color: var(--sub);
     cursor: pointer; display: block; font-size: 14px;
   }
   .drop.has { padding: 6px; }
-  .drop img { max-width: 100%; max-height: 160px; border-radius: 8px; display: block; margin: 0 auto; }
+  .drop img { max-width: 100%; max-height: 110px; border-radius: 8px; display: block; margin: 0 auto; }
   .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .seg button { flex: 1; border: 0; border-radius: 0; padding: 8px 6px; font-weight: 400; font-size: 13px; }
   .seg button.on { background: var(--ink); color: var(--panel); }
   input[type=range] { width: 100%; accent-color: var(--ink); }
-  .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); margin-top: 10px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); margin-top: 6px; }
+  .checks { display: flex; flex-wrap: wrap; column-gap: 14px; }
   .slides {
-    display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px;
+    display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px;
     -webkit-overflow-scrolling: touch;
   }
-  .slide { flex: none; width: min(78vw, 300px); scroll-snap-align: start; }
+  .slide { flex: none; width: min(34vw, 20dvh, 220px); scroll-snap-align: start; }
+  .slide canvas { cursor: zoom-in; }
   .slide canvas { width: 100%; aspect-ratio: 4 / 5; display: block; border-radius: 6px; box-shadow: 0 1px 6px rgba(0,0,0,.12); }
-  .slide .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 12px; color: var(--sub); }
-  .slide .meta button { padding: 5px 10px; font-size: 12px; }
-  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-  #caption { min-height: 180px; font-family: "Noto Sans KR", sans-serif; font-size: 14px; }
+  .slide .meta { margin-top: 3px; font-size: 11px; color: var(--sub); }
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .actions button { flex: 1; white-space: nowrap; }
+  #caption { min-height: 140px; font-family: "Noto Sans KR", sans-serif; font-size: 14px; }
   .toast {
     position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--panel);
     padding: 10px 16px; border-radius: 999px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 9;
   }
   .toast.show { opacity: 1; }
-  .empty { color: var(--sub); font-size: 14px; padding: 30px 0; text-align: center; }
+  .empty { color: var(--sub); font-size: 13px; padding: 18px 0; text-align: center; width: 100%; }
+  .zoom { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; align-items: center; justify-content: center; z-index: 20; }
+  .zoom.show { display: flex; }
+  .zoom img { max-width: 94vw; max-height: 90dvh; border-radius: 6px; }
   .count { font-size: 12px; color: var(--sub); text-align: right; margin-top: 4px; }
 </style>
 </head>
@@ -86,7 +110,7 @@
   <header><h1>HEX 글스타그램</h1><span>글과 이미지만 넣으면 캐러셀이 완성돼요</span></header>
 
   <div class="grid">
-    <div>
+    <div class="controls">
       <div class="card">
         <h2>1. 오늘의 색</h2>
         <div class="hexbox">
@@ -95,7 +119,7 @@
           <button id="reroll" title="새 색 뽑기">🎲</button>
         </div>
         <div class="ramp" id="ramp"></div>
-        <label for="no" style="margin-top:14px">회차</label>
+        <label for="no">회차</label>
         <input type="number" id="no" min="1" value="1">
       </div>
 
@@ -103,14 +127,15 @@
         <h2>2. 표지 이미지</h2>
         <label class="drop" id="drop" for="file">이미지를 골라 주세요 (명화, 인문 사진 등)</label>
         <input type="file" id="file" accept="image/*" hidden>
-        <label>도트 크기</label>
+        <label>도트 크기 <b id="gridLabel"></b></label>
         <input type="range" id="grid" min="0" max="5" step="1" value="2">
-        <div class="hint" id="gridLabel"></div>
-        <label>명암 단계</label>
+        <label>명암 단계 <b id="levelsVal"></b></label>
         <input type="range" id="levels" min="3" max="8" step="1" value="5">
-        <div class="check"><input type="checkbox" id="gap"><span>도트 사이 간격</span></div>
-        <div class="check"><input type="checkbox" id="badge" checked><span>표지에 회차·HEX 표시</span></div>
-        <div class="check"><input type="checkbox" id="coverTitle" checked><span>표지에 제목 표시</span></div>
+        <div class="checks">
+          <div class="check"><input type="checkbox" id="gap"><span>도트 간격</span></div>
+          <div class="check"><input type="checkbox" id="badge" checked><span>회차·HEX</span></div>
+          <div class="check"><input type="checkbox" id="coverTitle" checked><span>표지 제목</span></div>
+        </div>
         <label for="credit">원본 출처 (캡션에 들어가요)</label>
         <input type="text" id="credit" placeholder="예: 빈센트 반 고흐, 「별이 빛나는 밤」, 1889">
       </div>
@@ -125,23 +150,28 @@
         <div class="seg" id="align">
           <button data-v="left" class="on">왼쪽</button><button data-v="center">가운데</button>
         </div>
-        <label>글자 크기</label>
-        <input type="range" id="fsize" min="34" max="60" step="2" value="44">
+        <label>글자 크기 <b id="fsizeVal"></b></label>
+        <div class="stepper">
+          <button type="button" id="fsDown">−</button>
+          <input type="range" id="fsize" min="30" max="64" step="1" value="44">
+          <button type="button" id="fsUp">+</button>
+        </div>
       </div>
     </div>
 
-    <div>
+    <div class="preview">
       <div class="card">
-        <h2>미리보기 · 캐러셀</h2>
+        <h2>미리보기 · 캐러셀 <span style="font-weight:400">(누르면 크게)</span></h2>
         <div class="slides" id="slides"><div class="empty">이미지나 글을 넣으면 여기에 슬라이드가 생겨요</div></div>
         <div class="actions">
           <button class="primary" id="shareIg" disabled>인스타에 공유</button>
           <button id="saveAll" disabled>전체 저장</button>
           <button id="nextNo">다음 회차로</button>
         </div>
-        <div class="hint" id="saveHint">「인스타에 공유」를 누르면 캡션이 복사되고 슬라이드가 순서대로 넘어가요. 공유 화면에서 Instagram → 피드를 고르고 캡션 칸에 붙여넣으세요.</div>
       </div>
+    </div>
 
+    <div class="captionArea">
       <div class="card">
         <h2>캡션</h2>
         <textarea id="caption" spellcheck="false"></textarea>
@@ -154,6 +184,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="zoom" id="zoom"><img id="zoomImg" alt=""></div>
 
 <script>
 const W = 1080, H = 1350;
@@ -469,11 +500,7 @@ function renderAll() {
     const meta = document.createElement("div");
     meta.className = "meta";
     meta.innerHTML = "<span>" + (i + 1) + " / " + out.length + (s.name === "cover" ? " · 표지" : "") + "</span>";
-    const b = document.createElement("button");
-    b.textContent = "저장";
-    b.onclick = () => saveSlide(s, i);
-    b.className = "savebtn";
-    meta.appendChild(b);
+    s.cv.onclick = () => openZoom(s.cv);
     d.appendChild(meta);
     box.appendChild(d);
   });
@@ -646,8 +673,28 @@ $("nextNo").onclick = () => {
 
 function updateGridLabel() {
   const c = GRID_OPTS[+$("grid").value];
-  $("gridLabel").textContent = "가로 " + c + "칸 × 세로 " + (c * 5 / 4) + "칸";
+  $("gridLabel").textContent = c + " × " + (c * 5 / 4) + "칸";
 }
+
+function updateValues() {
+  $("fsizeVal").textContent = $("fsize").value + "px";
+  $("levelsVal").textContent = $("levels").value + "단계";
+}
+function stepFont(d) {
+  const r = $("fsize");
+  r.value = Math.min(+r.max, Math.max(+r.min, +r.value + d));
+  r.dispatchEvent(new Event("input"));
+}
+$("fsDown").onclick = () => stepFont(-1);
+$("fsUp").onclick = () => stepFont(1);
+$("fsize").addEventListener("input", updateValues);
+$("levels").addEventListener("input", updateValues);
+
+function openZoom(cv) {
+  $("zoomImg").src = cv.toDataURL("image/png");
+  $("zoom").classList.add("show");
+}
+$("zoom").onclick = () => $("zoom").classList.remove("show");
 
 /* ---------- 시작 ---------- */
 (async function init() {
@@ -663,6 +710,7 @@ function updateGridLabel() {
   state.align = load("align", "left");
   [...$("align").children].forEach(x => x.classList.toggle("on", x.dataset.v === state.align));
   updateGridLabel();
+  updateValues();
   try {
     await Promise.all([
       document.fonts.load('44px "Gowun Batang"'),
