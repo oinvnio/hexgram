@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HEX 글스타그램</title>
+<meta name="theme-color" content="#141414">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=DotGothic16&family=Noto+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f2ee; --panel: #fff; --ink: #1b1b1b; --sub: #6d6a64; --line: #e2ded6;
+    --accent: #3a7f9c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141414; --panel: #1e1e1e; --ink: #ecebe8; --sub: #9a968f; --line: #2e2e2e; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "Noto Sans KR", system-ui, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  h1 { font: 22px "DotGothic16", monospace; margin: 0; letter-spacing: .02em; }
+  header span { color: var(--sub); font-size: 13px; }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 860px) { .grid { grid-template-columns: 360px 1fr; align-items: start; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--sub); margin: 0 0 10px; letter-spacing: .04em; }
+  .card + .card { margin-top: 14px; }
+  label { display: block; font-size: 13px; color: var(--sub); margin: 12px 0 6px; }
+  label:first-of-type { margin-top: 0; }
+  input[type=text], input[type=number], textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+    background: transparent; color: var(--ink); font: inherit;
+  }
+  textarea { min-height: 220px; resize: vertical; font-family: "Gowun Batang", serif; font-size: 16px; line-height: 1.7; }
+  .hint { font-size: 12px; color: var(--sub); margin-top: 6px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > * { flex: 1; }
+  button {
+    font: inherit; font-weight: 600; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+    border-radius: 10px; padding: 10px 14px; cursor: pointer;
+  }
+  button.primary { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  button:disabled { opacity: .45; cursor: default; }
+  .hexbox { display: flex; gap: 10px; align-items: center; }
+  .swatch { width: 52px; height: 52px; border-radius: 10px; border: 1px solid var(--line); flex: none; }
+  .hexbox input { font-family: "DotGothic16", monospace; font-size: 20px; text-transform: uppercase; }
+  .ramp { display: flex; height: 14px; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+  .ramp div { flex: 1; }
+  .drop {
+    border: 1.5px dashed var(--line); border-radius: 12px; padding: 14px; text-align: center; color: var(--sub);
+    cursor: pointer; display: block; font-size: 14px;
+  }
+  .drop.has { padding: 6px; }
+  .drop img { max-width: 100%; max-height: 160px; border-radius: 8px; display: block; margin: 0 auto; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { flex: 1; border: 0; border-radius: 0; padding: 8px 6px; font-weight: 400; font-size: 13px; }
+  .seg button.on { background: var(--ink); color: var(--panel); }
+  input[type=range] { width: 100%; accent-color: var(--ink); }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); margin-top: 10px; }
+  .slides {
+    display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .slide { flex: none; width: min(78vw, 300px); scroll-snap-align: start; }
+  .slide canvas { width: 100%; aspect-ratio: 4 / 5; display: block; border-radius: 6px; box-shadow: 0 1px 6px rgba(0,0,0,.12); }
+  .slide .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 12px; color: var(--sub); }
+  .slide .meta button { padding: 5px 10px; font-size: 12px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  #caption { min-height: 180px; font-family: "Noto Sans KR", sans-serif; font-size: 14px; }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--panel);
+    padding: 10px 16px; border-radius: 999px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 9;
+  }
+  .toast.show { opacity: 1; }
+  .empty { color: var(--sub); font-size: 14px; padding: 30px 0; text-align: center; }
+  .count { font-size: 12px; color: var(--sub); text-align: right; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>HEX 글스타그램</h1><span>글과 이미지만 넣으면 캐러셀이 완성돼요</span></header>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>1. 오늘의 색</h2>
+        <div class="hexbox">
+          <div class="swatch" id="swatch"></div>
+          <input type="text" id="hex" maxlength="7" spellcheck="false">
+          <button id="reroll" title="새 색 뽑기">🎲</button>
+        </div>
+        <div class="ramp" id="ramp"></div>
+        <label for="no" style="margin-top:14px">회차</label>
+        <input type="number" id="no" min="1" value="1">
+      </div>
+
+      <div class="card">
+        <h2>2. 표지 이미지</h2>
+        <label class="drop" id="drop" for="file">이미지를 골라 주세요 (명화, 인문 사진 등)</label>
+        <input type="file" id="file" accept="image/*" hidden>
+        <label>도트 크기</label>
+        <input type="range" id="grid" min="0" max="5" step="1" value="2">
+        <div class="hint" id="gridLabel"></div>
+        <label>명암 단계</label>
+        <input type="range" id="levels" min="3" max="8" step="1" value="5">
+        <div class="check"><input type="checkbox" id="gap"><span>도트 사이 간격</span></div>
+        <div class="check"><input type="checkbox" id="badge" checked><span>표지에 회차·HEX 표시</span></div>
+        <label for="credit">원본 출처 (캡션에 들어가요)</label>
+        <input type="text" id="credit" placeholder="예: 빈센트 반 고흐, 「별이 빛나는 밤」, 1889">
+      </div>
+
+      <div class="card">
+        <h2>3. 글</h2>
+        <label for="title">제목 (선택)</label>
+        <input type="text" id="title" placeholder="비워 두면 제목 없이 시작해요">
+        <label for="text">본문</label>
+        <textarea id="text" placeholder="여기에 글을 붙여넣으세요.&#10;&#10;빈 줄로 문단을 나누고,&#10;특정 위치에서 장을 넘기고 싶으면 --- 를 한 줄에 쓰세요."></textarea>
+        <label>정렬</label>
+        <div class="seg" id="align">
+          <button data-v="left" class="on">왼쪽</button><button data-v="center">가운데</button>
+        </div>
+        <label>글자 크기</label>
+        <input type="range" id="fsize" min="34" max="60" step="2" value="44">
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>미리보기 · 캐러셀</h2>
+        <div class="slides" id="slides"><div class="empty">이미지나 글을 넣으면 여기에 슬라이드가 생겨요</div></div>
+        <div class="actions">
+          <button class="primary" id="shareIg" disabled>인스타에 공유</button>
+          <button id="saveAll" disabled>전체 저장</button>
+          <button id="nextNo">다음 회차로</button>
+        </div>
+        <div class="hint" id="saveHint">「인스타에 공유」를 누르면 캡션이 복사되고 슬라이드가 순서대로 넘어가요. 공유 화면에서 Instagram → 피드를 고르고 캡션 칸에 붙여넣으세요.</div>
+      </div>
+
+      <div class="card">
+        <h2>캡션</h2>
+        <textarea id="caption" spellcheck="false"></textarea>
+        <div class="count" id="capCount"></div>
+        <label for="tags">해시태그 (기억돼요)</label>
+        <input type="text" id="tags" value="#글스타그램 #글 #짧은글 #오늘의색 #랜덤컬러">
+        <div class="actions"><button class="primary" id="copyCap">캡션 복사</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const W = 1080, H = 1350;
+const GRID_OPTS = [24, 36, 40, 60, 72, 108];   // 1080의 약수이면서 4의 배수 → 4:5 격자가 딱 맞음
+const $ = (id) => document.getElementById(id);
+
+const state = { img: null, hex: "#3A7F9C", align: "left", slides: [] };
+
+/* ---------- 저장소 ---------- */
+function load(key, def) {
+  try { const v = localStorage.getItem("hexgram." + key); return v === null ? def : v; } catch (e) { return def; }
+}
+function save(key, v) {
+  try { localStorage.setItem("hexgram." + key, v); } catch (e) {}
+}
+
+/* ---------- 색 계산 ---------- */
+function hexToRgb(h) {
+  const n = parseInt(h.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function rgbToHex(c) {
+  return "#" + c.map(v => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
+}
+function mix(a, b, t) {
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+}
+function lum(c) {
+  const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+}
+function randomHex() {
+  const a = new Uint8Array(3);
+  crypto.getRandomValues(a);
+  return rgbToHex([a[0], a[1], a[2]]);
+}
+// 어두운 쪽 → 뽑힌 색 → 밝은 쪽 으로 이어지는 명암 팔레트
+function makeRamp(hex, n) {
+  const base = hexToRgb(hex);
+  const dark = mix(base, [0, 0, 0], 0.82);
+  const light = mix(base, [255, 255, 255], 0.82);
+  const ramp = [];
+  for (let i = 0; i < n; i++) {
+    const t = n === 1 ? 0.5 : i / (n - 1);
+    ramp.push(t < 0.5 ? mix(dark, base, t / 0.5) : mix(base, light, (t - 0.5) / 0.5));
+  }
+  return ramp;
+}
+function textColors(hex) {
+  const base = hexToRgb(hex);
+  const isLight = lum(base) > 0.32;
+  return {
+    main: rgbToHex(isLight ? mix(base, [0, 0, 0], 0.85) : mix(base, [255, 255, 255], 0.9)),
+    sub: rgbToHex(isLight ? mix(base, [0, 0, 0], 0.55) : mix(base, [255, 255, 255], 0.55))
+  };
+}
+
+/* ---------- 표지: 도트 변환 ---------- */
+function renderCover() {
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+  const cols = GRID_OPTS[+$("grid").value];
+  const rows = cols * 5 / 4;
+  const cell = W / cols;
+  const levels = +$("levels").value;
+  const ramp = makeRamp(state.hex, levels).map(rgbToHex);
+
+  // 1) 이미지를 4:5로 가운데 크롭해서 격자 크기로 축소 (축소하면서 평균색이 됨)
+  const img = state.img;
+  const small = document.createElement("canvas");
+  small.width = cols; small.height = rows;
+  const sctx = small.getContext("2d");
+  sctx.imageSmoothingEnabled = true;
+  sctx.imageSmoothingQuality = "high";
+  const ir = img.width / img.height, tr = 4 / 5;
+  let sw, sh, sx, sy;
+  if (ir > tr) { sh = img.height; sw = sh * tr; sx = (img.width - sw) / 2; sy = 0; }
+  else { sw = img.width; sh = sw / tr; sx = 0; sy = (img.height - sh) / 2; }
+  sctx.drawImage(img, sx, sy, sw, sh, 0, 0, cols, rows);
+  const px = sctx.getImageData(0, 0, cols, rows).data;
+
+  // 2) 밝기 → 분위수로 단계 나누기 (어떤 사진이든 모든 단계가 고르게 쓰이도록)
+  const L = new Float32Array(cols * rows);
+  for (let i = 0; i < L.length; i++) {
+    L[i] = 0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2];
+  }
+  const sorted = Array.from(L).sort((a, b) => a - b);
+  const th = [];
+  for (let k = 1; k < levels; k++) {
+    th.push(sorted[Math.floor(sorted.length * k / levels)]);
+  }
+
+  // 3) 칠하기
+  const gap = $("gap").checked;
+  ctx.fillStyle = ramp[0];
+  ctx.fillRect(0, 0, W, H);
+  const pad = gap ? Math.max(1, cell * 0.12) : 0;
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const v = L[y * cols + x];
+      let cnt = 0;
+      while (cnt < th.length && v > th[cnt]) {
+        cnt++;
+      }
+      ctx.fillStyle = ramp[cnt];
+      const x0 = Math.round(x * cell), y0 = Math.round(y * cell);
+      const x1 = Math.round((x + 1) * cell), y1 = Math.round((y + 1) * cell);
+      ctx.fillRect(x0 + pad / 2, y0 + pad / 2, x1 - x0 - pad, y1 - y0 - pad);
+    }
+  }
+
+  // 4) 회차·HEX 배지
+  if ($("badge").checked) {
+    const label = "No." + pad3($("no").value) + "  " + state.hex;
+    ctx.font = '34px "DotGothic16"';
+    const tw = ctx.measureText(label).width;
+    const bx = 54, by = H - 54 - 64;
+    ctx.fillStyle = ramp[ramp.length - 1];
+    ctx.fillRect(bx, by, tw + 44, 64);
+    ctx.fillStyle = ramp[0];
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, bx + 22, by + 34);
+  }
+  return cv;
+}
+
+/* ---------- 글 슬라이드 ---------- */
+function pad3(n) { return String(Math.max(1, parseInt(n) || 1)).padStart(3, "0"); }
+
+function wrapLine(ctx, text, maxW) {
+  if (text.trim() === "") return [""];
+  const words = text.split(/(\s+)/);
+  const lines = [];
+  let cur = "";
+  for (const w of words) {
+    const test = cur + w;
+    if (ctx.measureText(test).width <= maxW) { cur = test; continue; }
+    if (cur.trim() !== "") { lines.push(cur.trimEnd()); cur = w.trimStart(); }
+    else { cur = w.trimStart(); }
+    // 한 단어가 너무 길면 글자 단위로 자르기
+    while (ctx.measureText(cur).width > maxW) {
+      let cnt = 1;
+      while (cnt < cur.length && ctx.measureText(cur.slice(0, cnt + 1)).width <= maxW) {
+        cnt++;
+      }
+      lines.push(cur.slice(0, cnt));
+      cur = cur.slice(cnt);
+    }
+  }
+  if (cur.trim() !== "") lines.push(cur.trimEnd());
+  return lines;
+}
+
+function layoutText() {
+  const fs = +$("fsize").value;
+  const lh = Math.round(fs * 1.75);
+  const marginX = 120, top = 200, bottom = 190;
+  const maxW = W - marginX * 2;
+  const perSlide = Math.floor((H - top - bottom) / lh);
+  const m = document.createElement("canvas").getContext("2d");
+  m.font = fs + 'px "Gowun Batang"';
+
+  const raw = $("text").value.replace(/\r/g, "");
+  const chunks = raw.split(/\n\s*-{3,}\s*\n|^\s*-{3,}\s*\n|\n\s*-{3,}\s*$/);
+  const pages = [];
+  for (const chunk of chunks) {
+    if (chunk.trim() === "") continue;
+    const paras = chunk.trim().split(/\n\s*\n/);
+    let page = [];
+    for (let p = 0; p < paras.length; p++) {
+      let lines = [];
+      for (const ln of paras[p].split("\n")) {
+        lines = lines.concat(wrapLine(m, ln, maxW));
+      }
+      const need = (page.length ? 1 : 0) + lines.length;
+      // 문단이 통째로 들어가면 넣고, 안 들어가면 다음 장으로 (너무 긴 문단은 잘라서)
+      if (page.length + need <= perSlide) {
+        if (page.length) page.push("");
+        page = page.concat(lines);
+      } else {
+        if (page.length && lines.length <= perSlide) {
+          pages.push(page);
+          page = lines.slice();
+        } else {
+          if (page.length) page.push("");
+          for (const l of lines) {
+            if (page.length >= perSlide) { pages.push(page); page = []; }
+            if (!(page.length === 0 && l === "")) page.push(l);
+          }
+        }
+      }
+    }
+    if (page.length) pages.push(page);
+  }
+  return { pages, fs, lh, marginX, top, bottom, perSlide };
+}
+
+function renderTextSlide(lines, idx, total, L) {
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+  const col = textColors(state.hex);
+  ctx.fillStyle = state.hex;
+  ctx.fillRect(0, 0, W, H);
+
+  // 머리말
+  ctx.fillStyle = col.sub;
+  ctx.font = '30px "DotGothic16"';
+  ctx.textBaseline = "alphabetic";
+  ctx.textAlign = "left";
+  ctx.fillText("No." + pad3($("no").value), L.marginX, 120);
+  ctx.textAlign = "right";
+  ctx.fillText(state.hex, W - L.marginX, 120);
+
+  // 제목 (첫 장만)
+  const title = $("title").value.trim();
+  let blockLines = lines.slice();
+  const align = state.align;
+  const x = align === "center" ? W / 2 : L.marginX;
+  ctx.textAlign = align;
+
+  const titleH = (idx === 0 && title) ? L.lh * 1.9 : 0;
+  const blockH = titleH + blockLines.length * L.lh;
+  const areaTop = L.top, areaH = H - L.top - L.bottom;
+  let y = areaTop + Math.max(0, (areaH - blockH) / 2) + L.fs;
+
+  if (titleH) {
+    ctx.fillStyle = col.main;
+    ctx.font = '700 ' + Math.round(L.fs * 1.15) + 'px "Gowun Batang"';
+    ctx.fillText(title, x, y);
+    y += titleH;
+  }
+  ctx.fillStyle = col.main;
+  ctx.font = L.fs + 'px "Gowun Batang"';
+  for (const ln of blockLines) {
+    ctx.fillText(ln, x, y);
+    y += L.lh;
+  }
+
+  // 꼬리말: 명암 팔레트 띠 + 쪽수
+  const ramp = makeRamp(state.hex, +$("levels").value).map(rgbToHex);
+  const sq = 22;
+  for (let i = 0; i < ramp.length; i++) {
+    ctx.fillStyle = ramp[i];
+    ctx.fillRect(L.marginX + i * sq, H - 120 - sq + 6, sq, sq);
+  }
+  ctx.fillStyle = col.sub;
+  ctx.font = '28px "DotGothic16"';
+  ctx.textAlign = "right";
+  ctx.fillText((idx + 1) + " / " + total, W - L.marginX, H - 114);
+  return cv;
+}
+
+/* ---------- 전체 렌더 ---------- */
+function renderAll() {
+  const box = $("slides");
+  const out = [];
+  if (state.img) out.push({ name: "cover", cv: renderCover() });
+  const L = layoutText();
+  if (L.pages.length === 0 && $("title").value.trim()) L.pages.push([]);
+  L.pages.forEach((lines, i) => {
+    out.push({ name: "text" + (i + 1), cv: renderTextSlide(lines, i, L.pages.length, L) });
+  });
+  state.slides = out;
+
+  box.innerHTML = "";
+  if (!out.length) {
+    box.innerHTML = '<div class="empty">이미지나 글을 넣으면 여기에 슬라이드가 생겨요</div>';
+  }
+  out.forEach((s, i) => {
+    const d = document.createElement("div");
+    d.className = "slide";
+    d.appendChild(s.cv);
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.innerHTML = "<span>" + (i + 1) + " / " + out.length + (s.name === "cover" ? " · 표지" : "") + "</span>";
+    const b = document.createElement("button");
+    b.textContent = "저장";
+    b.onclick = () => saveSlide(s, i);
+    b.className = "savebtn";
+    meta.appendChild(b);
+    d.appendChild(meta);
+    box.appendChild(d);
+  });
+  $("saveAll").disabled = !out.length;
+  updateSaveUI();
+  buildCaption();
+  prepareFiles(out);
+}
+
+let timer = null;
+function schedule() {
+  clearTimeout(timer);
+  timer = setTimeout(renderAll, 120);
+}
+
+/* ---------- 캡션 ---------- */
+let captionEdited = false;
+function buildCaption() {
+  if (captionEdited) return;
+  const title = $("title").value.trim();
+  const body = $("text").value.replace(/\r/g, "").replace(/^\s*-{3,}\s*$/gm, "").replace(/\n{3,}/g, "\n\n").trim();
+  const credit = $("credit").value.trim();
+  const parts = ["No." + pad3($("no").value) + " · " + state.hex];
+  if (title) parts.push("「" + title + "」");
+  if (body) parts.push(body);
+  const tail = [];
+  if (credit) tail.push("🖼 " + credit);
+  if ($("tags").value.trim()) tail.push($("tags").value.trim());
+  let cap = parts.join("\n\n");
+  if (tail.length) cap += "\n\n—\n" + tail.join("\n");
+  $("caption").value = cap;
+  countCaption();
+}
+function countCaption() {
+  const n = $("caption").value.length;
+  $("capCount").textContent = n + " / 2200" + (n > 2200 ? " · 인스타 캡션 한도 초과" : "");
+}
+
+/* ---------- 저장 ---------- */
+// 공유는 버튼을 누른 직후에만 허용되므로, PNG 파일은 미리 만들어 둔다
+let files = [];
+let prepId = 0;
+async function prepareFiles(out) {
+  const my = ++prepId;
+  $("shareIg").disabled = true;
+  const list = [];
+  for (let i = 0; i < out.length; i++) {
+    const blob = await toBlob(out[i].cv);
+    if (my !== prepId) return;
+    list.push(new File([blob], fileName(out[i], i), { type: "image/png" }));
+  }
+  files = list;
+  $("shareIg").disabled = !files.length;
+}
+function updateSaveUI() {
+  const canShare = !!(navigator.canShare && navigator.canShare({ files: [new File([""], "a.png", { type: "image/png" })] }));
+  $("shareIg").style.display = canShare ? "" : "none";
+}
+function fileName(s, i) {
+  return "No" + pad3($("no").value) + "_" + state.hex.slice(1) + "_" + String(i + 1).padStart(2, "0") + ".png";
+}
+function toBlob(cv) {
+  return new Promise(res => cv.toBlob(res, "image/png"));
+}
+async function saveSlide(s, i) {
+  const f = files[i] || new File([await toBlob(s.cv)], fileName(s, i), { type: "image/png" });
+  const url = URL.createObjectURL(f);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = f.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return true;
+}
+async function saveAll() {
+  $("saveAll").disabled = true;
+  for (let i = 0; i < state.slides.length; i++) {
+    await saveSlide(state.slides[i], i);
+    await new Promise(r => setTimeout(r, 350));
+  }
+  toast(state.slides.length + "장을 저장했어요");
+  $("saveAll").disabled = false;
+}
+async function shareIg() {
+  if (!files.length) return;
+  try { await navigator.clipboard.writeText($("caption").value); } catch (e) {}
+  try {
+    await navigator.share({ files: files, text: $("caption").value });
+  } catch (e) {
+    if (e && e.name !== "AbortError") toast("공유에 실패했어요. 전체 저장 후 인스타에서 올려 주세요");
+  }
+}
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+/* ---------- 색 UI ---------- */
+function setHex(h) {
+  state.hex = h.toUpperCase();
+  $("hex").value = state.hex;
+  $("swatch").style.background = state.hex;
+  const ramp = makeRamp(state.hex, +$("levels").value);
+  $("ramp").innerHTML = ramp.map(c => '<div style="background:' + rgbToHex(c) + '"></div>').join("");
+  save("hex", state.hex);
+  schedule();
+}
+
+/* ---------- 이벤트 ---------- */
+$("reroll").onclick = () => setHex(randomHex());
+$("hex").addEventListener("input", (e) => {
+  let v = e.target.value.trim();
+  if (!v.startsWith("#")) v = "#" + v;
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) setHex(v);
+});
+$("file").addEventListener("change", (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = () => {
+    state.img = img;
+    $("drop").classList.add("has");
+    $("drop").innerHTML = '<img src="' + url + '" alt="">';
+    schedule();
+  };
+  img.src = url;
+});
+$("grid").addEventListener("input", () => { updateGridLabel(); save("grid", $("grid").value); schedule(); });
+$("levels").addEventListener("input", () => { save("levels", $("levels").value); setHex(state.hex); });
+["gap", "badge"].forEach(id => $(id).addEventListener("change", () => { save(id, $(id).checked ? "1" : "0"); schedule(); }));
+$("fsize").addEventListener("input", () => { save("fsize", $("fsize").value); schedule(); });
+$("no").addEventListener("input", () => { save("no", $("no").value); schedule(); });
+["title", "text", "credit"].forEach(id => $(id).addEventListener("input", () => { save("draft." + id, $(id).value); schedule(); }));
+$("tags").addEventListener("input", () => { save("tags", $("tags").value); schedule(); });
+$("align").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  state.align = b.dataset.v;
+  save("align", state.align);
+  [...$("align").children].forEach(x => x.classList.toggle("on", x === b));
+  schedule();
+});
+$("caption").addEventListener("input", () => { captionEdited = true; countCaption(); });
+$("copyCap").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($("caption").value);
+    toast("캡션을 복사했어요");
+  } catch (e) {
+    $("caption").select();
+    toast("복사가 막혀 있어요. 선택된 글을 직접 복사하세요");
+  }
+};
+$("saveAll").onclick = saveAll;
+$("shareIg").onclick = shareIg;
+$("nextNo").onclick = () => {
+  $("no").value = (parseInt($("no").value) || 0) + 1;
+  save("no", $("no").value);
+  ["title", "text", "credit"].forEach(id => { $(id).value = ""; save("draft." + id, ""); });
+  captionEdited = false;
+  setHex(randomHex());
+  toast("No." + pad3($("no").value) + " · 새 색을 뽑았어요");
+};
+
+function updateGridLabel() {
+  const c = GRID_OPTS[+$("grid").value];
+  $("gridLabel").textContent = "가로 " + c + "칸 × 세로 " + (c * 5 / 4) + "칸";
+}
+
+/* ---------- 시작 ---------- */
+(async function init() {
+  $("grid").value = load("grid", "2");
+  $("levels").value = load("levels", "5");
+  $("gap").checked = load("gap", "0") === "1";
+  $("badge").checked = load("badge", "1") === "1";
+  $("fsize").value = load("fsize", "44");
+  $("no").value = load("no", "1");
+  $("tags").value = load("tags", $("tags").value);
+  ["title", "text", "credit"].forEach(id => { $(id).value = load("draft." + id, ""); });
+  state.align = load("align", "left");
+  [...$("align").children].forEach(x => x.classList.toggle("on", x.dataset.v === state.align));
+  updateGridLabel();
+  try {
+    await Promise.all([
+      document.fonts.load('44px "Gowun Batang"'),
+      document.fonts.load('700 44px "Gowun Batang"'),
+      document.fonts.load('30px "DotGothic16"')
+    ]);
+  } catch (e) {}
+  setHex(load("hex", randomHex()));
+  updateSaveUI();
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
