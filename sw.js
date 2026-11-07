@@ -1,5 +1,5 @@
 // 앱 파일은 미리 저장, 구글 폰트는 처음 쓸 때 저장 → 이후 오프라인에서도 실행
-const CACHE = "hexgram-v1";
+const CACHE = "hexgram-v2";
 const CORE = ["./", "index.html", "manifest.json", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {

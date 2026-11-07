@@ -110,6 +110,7 @@
         <input type="range" id="levels" min="3" max="8" step="1" value="5">
         <div class="check"><input type="checkbox" id="gap"><span>도트 사이 간격</span></div>
         <div class="check"><input type="checkbox" id="badge" checked><span>표지에 회차·HEX 표시</span></div>
+        <div class="check"><input type="checkbox" id="coverTitle" checked><span>표지에 제목 표시</span></div>
         <label for="credit">원본 출처 (캡션에 들어가요)</label>
         <input type="text" id="credit" placeholder="예: 빈센트 반 고흐, 「별이 빛나는 밤」, 1889">
       </div>
@@ -265,7 +266,8 @@ function renderCover() {
     }
   }
 
-  // 4) 회차·HEX 배지
+  // 4) 제목 + 회차·HEX 배지 (왼쪽 아래에 쌓기)
+  let stackY = H - 54;
   if ($("badge").checked) {
     const label = "No." + pad3($("no").value) + "  " + state.hex;
     ctx.font = '34px "DotGothic16"';
@@ -276,6 +278,30 @@ function renderCover() {
     ctx.fillStyle = ramp[0];
     ctx.textBaseline = "middle";
     ctx.fillText(label, bx + 22, by + 34);
+    stackY = by - 14;
+  }
+  const title = $("title").value.trim();
+  if (title && $("coverTitle").checked) {
+    const tfs = 54, tlh = 74, padX = 30, padY = 26;
+    ctx.font = '700 ' + tfs + 'px "Gowun Batang"';
+    let tl = wrapLine(ctx, title, W - 108 - padX * 2);
+    if (tl.length > 3) { tl = tl.slice(0, 3); tl[2] = tl[2].replace(/.?$/, "…"); }
+    let bw = 0;
+    for (const l of tl) {
+      bw = Math.max(bw, ctx.measureText(l).width);
+    }
+    const bh = tl.length * tlh + padY * 2 - (tlh - tfs);
+    const bx = 54, by = stackY - bh;
+    ctx.fillStyle = ramp[ramp.length - 1];
+    ctx.fillRect(bx, by, bw + padX * 2, bh);
+    ctx.fillStyle = ramp[0];
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    let ty = by + padY + tfs * 0.86;
+    for (const l of tl) {
+      ctx.fillText(l, bx + padX, ty);
+      ty += tlh;
+    }
   }
   return cv;
 }
@@ -314,11 +340,20 @@ function layoutText() {
   const maxW = W - marginX * 2;
   const perSlide = Math.floor((H - top - bottom) / lh);
   const m = document.createElement("canvas").getContext("2d");
+  // 제목 줄 수 계산 → 첫 장은 그만큼 본문 줄을 덜 넣는다
+  const title = $("title").value.trim();
+  const tfs = Math.round(fs * 1.15);
+  const titleLH = Math.round(tfs * 1.5);
+  m.font = '700 ' + tfs + 'px "Gowun Batang"';
+  const titleLines = title ? wrapLine(m, title, maxW) : [];
+  const titleBlock = titleLines.length ? titleLines.length * titleLH + Math.round(lh * 0.6) : 0;
+  const reserve = Math.ceil(titleBlock / lh);
   m.font = fs + 'px "Gowun Batang"';
 
   const raw = $("text").value.replace(/\r/g, "");
   const chunks = raw.split(/\n\s*-{3,}\s*\n|^\s*-{3,}\s*\n|\n\s*-{3,}\s*$/);
   const pages = [];
+  const cap = () => (pages.length === 0 ? Math.max(1, perSlide - reserve) : perSlide);
   for (const chunk of chunks) {
     if (chunk.trim() === "") continue;
     const paras = chunk.trim().split(/\n\s*\n/);
@@ -330,7 +365,7 @@ function layoutText() {
       }
       const need = (page.length ? 1 : 0) + lines.length;
       // 문단이 통째로 들어가면 넣고, 안 들어가면 다음 장으로 (너무 긴 문단은 잘라서)
-      if (page.length + need <= perSlide) {
+      if (page.length + need <= cap()) {
         if (page.length) page.push("");
         page = page.concat(lines);
       } else {
@@ -340,7 +375,7 @@ function layoutText() {
         } else {
           if (page.length) page.push("");
           for (const l of lines) {
-            if (page.length >= perSlide) { pages.push(page); page = []; }
+            if (page.length >= cap()) { pages.push(page); page = []; }
             if (!(page.length === 0 && l === "")) page.push(l);
           }
         }
@@ -348,7 +383,7 @@ function layoutText() {
     }
     if (page.length) pages.push(page);
   }
-  return { pages, fs, lh, marginX, top, bottom, perSlide };
+  return { pages, fs, lh, marginX, top, bottom, perSlide, titleLines, tfs, titleLH, titleBlock };
 }
 
 function renderTextSlide(lines, idx, total, L) {
@@ -369,23 +404,27 @@ function renderTextSlide(lines, idx, total, L) {
   ctx.fillText(state.hex, W - L.marginX, 120);
 
   // 제목 (첫 장만)
-  const title = $("title").value.trim();
   let blockLines = lines.slice();
   const align = state.align;
   const x = align === "center" ? W / 2 : L.marginX;
   ctx.textAlign = align;
 
-  const titleH = (idx === 0 && title) ? L.lh * 1.9 : 0;
+  const titleH = (idx === 0 && L.titleLines.length) ? L.titleBlock : 0;
   const blockH = titleH + blockLines.length * L.lh;
   const areaTop = L.top, areaH = H - L.top - L.bottom;
-  let y = areaTop + Math.max(0, (areaH - blockH) / 2) + L.fs;
+  let y = areaTop + Math.max(0, (areaH - blockH) / 2);
 
   if (titleH) {
     ctx.fillStyle = col.main;
-    ctx.font = '700 ' + Math.round(L.fs * 1.15) + 'px "Gowun Batang"';
-    ctx.fillText(title, x, y);
+    ctx.font = '700 ' + L.tfs + 'px "Gowun Batang"';
+    let ty = y + L.tfs;
+    for (const tl of L.titleLines) {
+      ctx.fillText(tl, x, ty);
+      ty += L.titleLH;
+    }
     y += titleH;
   }
+  y += L.fs;
   ctx.fillStyle = col.main;
   ctx.font = L.fs + 'px "Gowun Batang"';
   for (const ln of blockLines) {
@@ -571,7 +610,7 @@ $("file").addEventListener("change", (e) => {
 });
 $("grid").addEventListener("input", () => { updateGridLabel(); save("grid", $("grid").value); schedule(); });
 $("levels").addEventListener("input", () => { save("levels", $("levels").value); setHex(state.hex); });
-["gap", "badge"].forEach(id => $(id).addEventListener("change", () => { save(id, $(id).checked ? "1" : "0"); schedule(); }));
+["gap", "badge", "coverTitle"].forEach(id => $(id).addEventListener("change", () => { save(id, $(id).checked ? "1" : "0"); schedule(); }));
 $("fsize").addEventListener("input", () => { save("fsize", $("fsize").value); schedule(); });
 $("no").addEventListener("input", () => { save("no", $("no").value); schedule(); });
 ["title", "text", "credit"].forEach(id => $(id).addEventListener("input", () => { save("draft." + id, $(id).value); schedule(); }));
@@ -616,6 +655,7 @@ function updateGridLabel() {
   $("levels").value = load("levels", "5");
   $("gap").checked = load("gap", "0") === "1";
   $("badge").checked = load("badge", "1") === "1";
+  $("coverTitle").checked = load("coverTitle", "1") === "1";
   $("fsize").value = load("fsize", "44");
   $("no").value = load("no", "1");
   $("tags").value = load("tags", $("tags").value);
